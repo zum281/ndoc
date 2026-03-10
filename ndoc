@@ -2,50 +2,52 @@
 
 set -uo pipefail
 
+VERSION="1.0.0"
 BASE_URL="https://raw.githubusercontent.com/nodejs/node/main/doc/api"
 API_URL="https://api.github.com/repos/nodejs/node/contents/doc/api"
 
 usage() {
-	cat << 'EOF'
+    cat << 'EOF'
 ndoc - Node.js API docs in the terminal
 
 Usage:
   ndoc <module>             Show full module docs (e.g. ndoc fs)
   ndoc <module>.<method>    Show specific method section (e.g. ndoc fs.readFile)
   ndoc --list               List available modules
+  ndoc --version            Show ndoc version
   ndoc --help               Show this help
 EOF
 }
 
 pager() {
-	if command -v glow &>/dev/null; then
-		glow -p
-	elif command -v bat &>/dev/null; then
-		bat -l md --style=plain --paging=always
-	elif [[ -n "${PAGER:-}" ]]; then
-		"$PAGER"
-	else
-		less -R
-	fi
+    if command -v glow &>/dev/null; then
+        glow -p
+    elif command -v bat &>/dev/null; then
+        bat -l md --style=plain --paging=always
+    elif [[ -n "${PAGER:-}" ]]; then
+        "$PAGER"
+    else
+        less -R
+    fi
 }
 
 fetch_module() {
-	local module="$1"
-	local url="${BASE_URL}/${module}.md"
-	local content
-	content=$(curl -sf --connect-timeout 5 --max-time 10 "$url") || {
-		echo "Error: module '${module}' not found." >&2
-		echo "Run 'ndoc --list' to see available modules." >&2
-		return 1
-	}
-	echo "$content"
+    local module="$1"
+    local url="${BASE_URL}/${module}.md"
+    local content
+    content=$(curl -sf --connect-timeout 5 --max-time 10 "$url") || {
+        echo "Error: module '${module}' not found." >&2
+        echo "Run 'ndoc --list' to see available modules." >&2
+        return 1
+    }
+    echo "$content"
 }
 
 extract_section() {
-	local content="$1"
-	local method="$2"
+    local content="$1"
+    local method="$2"
 
-	awk -v method="$method" '
+    awk -v method="$method" '
 	  BEGIN { found=0; level=0 }
 	  /^#{1,4} / {
 	    if (found) {
@@ -70,58 +72,62 @@ extract_section() {
 }
 
 list_modules() {
-	local response
-	response=$(curl -sf --connect-timeout 5 --max-time 10 "$API_URL") || {
-		echo "Error: failed to fetch module list from GitHub API." >&2
-		return 1
-	}
-	echo "Available Node.js API modules:"
-	echo ""
-	if command -v jq &>/dev/null; then
-		echo "$response" | jq -r '.[].name | select(endswith(".md")) | rtrimstr(".md")' | sort | column
-	else
-		echo "$response" | grep '"name"' | sed 's/.*"name": "\(.*\)\.md".*/\1/' | grep -v '^\s*$' | sort | column
-	fi
+    local response
+    response=$(curl -sf --connect-timeout 5 --max-time 10 "$API_URL") || {
+        echo "Error: failed to fetch module list from GitHub API." >&2
+        return 1
+    }
+    echo "Available Node.js API modules:"
+    echo ""
+    if command -v jq &>/dev/null; then
+        echo "$response" | jq -r '.[].name | select(endswith(".md")) | rtrimstr(".md")' | sort | column
+    else
+        echo "$response" | grep '"name"' | sed 's/.*"name": "\(.*\)\.md".*/\1/' | grep -v '^\s*$' | sort | column
+    fi
 }
 
 if [[ $# -eq 0 ]]; then
-	usage
-	exit 1
+    usage
+    exit 1
 fi
 
 if ! command -v curl &>/dev/null; then
-	echo "Error: curl is required but not found." >&2
-	exit 1
+    echo "Error: curl is required but not found." >&2
+    exit 1
 fi
 
 case "$1" in
-	--help|-h)
-		usage
-		exit 0
-		;;
-	--list|-l)
-		list_modules
-		exit 0
-		;;
+    --version|-V)
+        echo "ndoc $VERSION"
+        exit 0
+        ;;
+    --help|-h)
+        usage
+        exit 0
+        ;;
+    --list|-l)
+        list_modules
+        exit 0
+        ;;
 esac
 
 input="$1"
 
 if [[ "$input" == *.* ]]; then
-	module="${input%%.*}"
-	method="${input#*.}"
-	content=$(fetch_module "$module") || exit 1
-	section=$(extract_section "$content" "$method")
+    module="${input%%.*}"
+    method="${input#*.}"
+    content=$(fetch_module "$module") || exit 1
+    section=$(extract_section "$content" "$method")
 
-	if [[ -z "$section" ]]; then
-		echo "Error: section '${method}' not found in '${module}' docs." >&2
-		echo "Try 'ndoc ${module}' to see the full module docs." >&2
-		exit 1
-	fi
+    if [[ -z "$section" ]]; then
+        echo "Error: section '${method}' not found in '${module}' docs." >&2
+        echo "Try 'ndoc ${module}' to see the full module docs." >&2
+        exit 1
+    fi
 
-	printf '%s\n' "$section" | pager
+    printf '%s\n' "$section" | pager
 
 else
-	content=$(fetch_module "$input") || exit 1
-	printf '%s\n' "$content" | pager
+    content=$(fetch_module "$input") || exit 1
+    printf '%s\n' "$content" | pager
 fi
