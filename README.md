@@ -1,6 +1,10 @@
 # ndoc
 
-![version](https://img.shields.io/github/v/release/zum281/ndoc)
+![version](https://img.shields.io/github/v/release/zum281/ndoc?style=flat-square)
+![CI](https://img.shields.io/github/actions/workflow/status/zum281/ndoc/ci.yml?branch=main&style=flat-square&label=CI)
+![license](https://img.shields.io/github/license/zum281/ndoc?style=flat-square)
+
+![demo](demo.gif)
 
 Browse Node.js API documentation from your terminal.
 
