@@ -1,18 +1,18 @@
 Output demo.gif
 
-Set Shell "bash"
+Set Shell "zsh"
 Set FontSize 13
 Set Width 1000
 Set Height 550
-Set Theme "Dracula"
+Set Theme "Catppuccin Mocha"
 
-Hide
-Type "export PATH=$PATH:/usr/local/bin"
-Enter
 Show
-
 Sleep 1s
+Type "ndoc fs"
+Sleep 500ms
+Enter
+Sleep 3s
 Type "ndoc fs.readFile"
 Sleep 500ms
 Enter
-Sleep 4s
+Sleep 3s
